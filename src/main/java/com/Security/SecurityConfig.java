@@ -32,13 +32,14 @@ public class SecurityConfig {
     // ✅ Authentication Provider (DAO provider using your CustomUserDetailsService)
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(customUserDetailsService); // ✅ pass it here
 
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+
+        provider.setUserDetailsService(customUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
+
         return provider;
     }
-
     // ✅ Authentication Manager (used if you build login endpoint later)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
