@@ -18,6 +18,10 @@ public class RoomRequestDTO {
     @PositiveOrZero
     private Long roomTypeId;
 
+    @NotNull(message = "Hotel ID cannot be null")
+    @PositiveOrZero
+    private Long hotelId;
+
 
 
 

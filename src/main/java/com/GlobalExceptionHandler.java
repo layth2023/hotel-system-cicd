@@ -1,7 +1,9 @@
-package com.Exception;
+package com;
 
-import com.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,13 +17,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.time.Instant;
 
-/**
- * Global Exception Handler
- * This class handles all exceptions across the whole application.
- * It replaces all entity-specific exception handlers.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // ==========================================================
     // 🔴 404 - NOT FOUND
@@ -37,103 +36,60 @@ public class GlobalExceptionHandler {
             com.Room.RoomNotFoundException.class,
 
             // ROOM TYPE
-            com.RoomType.RoomTypeNotFoundException.class
+            com.RoomType.RoomTypeNotFoundException.class,
 
-            // ✅ Add more NotFound exceptions here when you create new modules
+            // HOTEL
+            com.Hotel.HotelNotFoundException.class,
+
+            // AMENITY
+            com.Amenity.AmenityNotFoundException.class
     })
-    public ResponseEntity<ApiError> handleNotFound(RuntimeException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiError> handleNotFound(RuntimeException ex,
+                                                   HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                404,
-                "Not Found",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
     // ==========================================================
-    // 🟠 409 - CONFLICT (Already Exists + DB conflicts)
+    // 🟠 409 - CONFLICT (Already Exists)
     // ==========================================================
     @ExceptionHandler({
-            // USER
             com.User.UserAlreadyExistsException.class,
-
-            // ROLE
             com.Role.RoleAlreadyExistsException.class,
-
-            // ROOM
             com.Room.RoomAlreadyExistsException.class,
-
-            // ROOM TYPE
-            com.RoomType.RoomTypeAlreadyExistsException.class
-
-            // ✅ Add more AlreadyExists exceptions here
+            com.RoomType.RoomTypeAlreadyExistsException.class,
+            com.Hotel.HotelAlreadyExistsException.class,
+            com.Amenity.AmenityAlreadyExistsException.class
     })
-    public ResponseEntity<ApiError> handleConflict(RuntimeException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiError> handleConflict(RuntimeException ex,
+                                                   HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                409,
-                "Conflict",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        return buildResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
     }
 
-    // ✅ database unique constraints / FK constraints, etc.
+    // ==========================================================
+    // 🟠 409 - DATABASE CONFLICT
+    // ==========================================================
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDatabaseConflict(DataIntegrityViolationException ex,
                                                            HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                409,
-                "Database Conflict",
-                "Data integrity violation",
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        log.warn("Database integrity violation at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse("Database integrity violation", HttpStatus.CONFLICT, request);
     }
 
     // ==========================================================
-    // 🟡 400 - BAD REQUEST
+    // 🟡 400 - BAD REQUEST (IllegalArgumentException)
     // ==========================================================
-    @ExceptionHandler({
-            // USER
-            com.User.UserBadRequestException.class,
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex,
+                                                          HttpServletRequest request) {
 
-            // ROLE
-            com.Role.RoleBadRequestException.class,
-
-            // ROOM
-            com.Room.RoomBadRequestException.class,
-
-            // ROOM TYPE
-            com.RoomType.RoomTypeBadRequestException.class
-
-            // ✅ Add more BadRequest exceptions here
-    })
-    public ResponseEntity<ApiError> handleBadRequest(RuntimeException ex, HttpServletRequest request) {
-
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                400,
-                "Bad Request",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
 
     // ==========================================================
-    // 🟡 400 - VALIDATION (@Valid)
+    // 🟡 400 - VALIDATION (@Valid body)
     // ==========================================================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationError(MethodArgumentNotValidException ex,
@@ -146,15 +102,23 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Validation error");
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                400,
-                "Validation Error",
-                message,
-                request.getRequestURI()
-        );
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request);
+    }
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    // ==========================================================
+    // 🟡 400 - VALIDATION (Request params / path vars)
+    // ==========================================================
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex,
+                                                              HttpServletRequest request) {
+
+        String message = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .orElse("Invalid request parameter");
+
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request);
     }
 
     // ==========================================================
@@ -164,15 +128,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleJsonError(HttpMessageNotReadableException ex,
                                                     HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                400,
-                "Malformed JSON",
-                "Invalid request body format",
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        log.debug("Malformed JSON at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse("Invalid request body format", HttpStatus.BAD_REQUEST, request);
     }
 
     // ==========================================================
@@ -182,33 +139,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
                                                        HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                400,
-                "Invalid Parameter",
-                "Invalid request parameter type",
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        String message = "Invalid value for parameter '" + ex.getName() + "'";
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request);
     }
 
     // ==========================================================
-    // 🔵 401 - UNAUTHORIZED (wrong credentials)
+    // 🔵 401 - UNAUTHORIZED
     // ==========================================================
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex,
                                                          HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                401,
-                "Unauthorized",
-                "Invalid username or password",
-                request.getRequestURI()
-        );
+        log.warn("Authentication failed at {}: {}", request.getRequestURI(), ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+        return buildResponse("Invalid username or password",
+                HttpStatus.UNAUTHORIZED, request);
     }
 
     // ==========================================================
@@ -218,32 +163,38 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex,
                                                        HttpServletRequest request) {
 
-        ApiError body = new ApiError(
-                Instant.now().toString(),
-                403,
-                "Forbidden",
-                "You do not have permission to access this resource",
-                request.getRequestURI()
-        );
+        log.warn("Access denied at {}: {}", request.getRequestURI(), ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+        return buildResponse("You do not have permission to access this resource",
+                HttpStatus.FORBIDDEN, request);
     }
 
     // ==========================================================
-    // ⚫ 500 - INTERNAL SERVER ERROR (Fallback)
+    // ⚫ 500 - FALLBACK
     // ==========================================================
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGlobalException(Exception ex,
                                                           HttpServletRequest request) {
 
+        log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        return buildResponse("Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    // ==========================================================
+    // 🔹 Helper method
+    // ==========================================================
+    private ResponseEntity<ApiError> buildResponse(String message,
+                                                   HttpStatus status,
+                                                   HttpServletRequest request) {
+
         ApiError body = new ApiError(
                 Instant.now().toString(),
-                500,
-                "Internal Server Error",
-                "Something went wrong",
+                status.value(),
+                status.getReasonPhrase(),
+                message,
                 request.getRequestURI()
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity.status(status).body(body);
     }
 }
