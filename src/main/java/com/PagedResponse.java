@@ -41,3 +41,4 @@ public class PagedResponse<T> {
     public int getTotalPages() { return totalPages; }
     public boolean isLast() { return last; }
 }
+

@@ -15,6 +15,7 @@ public class ApiError {
         this.path = path;
     }
 
+
     public String getTimestamp() { return timestamp; }
     public int getStatus() { return status; }
     public String getError() { return error; }

@@ -1,5 +1,6 @@
 package com;
 
+import com.Security.RefreshTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,13 +19,18 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.time.Instant;
 
+/**
+ * Global Exception Handler for consistent error responses.
+ * Handles all application exceptions and returns standardized API errors.
+ */
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // ==========================================================
-    // 🔴 404 - NOT FOUND
+    // 404 - NOT FOUND
     // ==========================================================
     @ExceptionHandler({
             // USER
@@ -42,7 +49,19 @@ public class GlobalExceptionHandler {
             com.Hotel.HotelNotFoundException.class,
 
             // AMENITY
-            com.Amenity.AmenityNotFoundException.class
+            com.Amenity.AmenityNotFoundException.class,
+
+            // BOOKING
+            com.Booking.BookingNotFoundException.class,
+
+            // PAYMENT
+            com.Payment.PaymentNotFoundException.class,
+
+            // IMAGE
+            com.Image.ImageNotFoundException.class,
+
+            // REVIEW
+            com.Review.ReviewNotFoundException.class
     })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex,
                                                    HttpServletRequest request) {
@@ -51,7 +70,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟠 409 - CONFLICT (Already Exists)
+    // 409 - CONFLICT (Already Exists)
     // ==========================================================
     @ExceptionHandler({
             com.User.UserAlreadyExistsException.class,
@@ -59,7 +78,10 @@ public class GlobalExceptionHandler {
             com.Room.RoomAlreadyExistsException.class,
             com.RoomType.RoomTypeAlreadyExistsException.class,
             com.Hotel.HotelAlreadyExistsException.class,
-            com.Amenity.AmenityAlreadyExistsException.class
+            com.Amenity.AmenityAlreadyExistsException.class,
+            com.Booking.BookingAlreadyExistsException.class,
+            com.Payment.PaymentAlreadyExistsException.class,
+            com.Review.ReviewAlreadyExistsException.class
     })
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex,
                                                    HttpServletRequest request) {
@@ -68,7 +90,24 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟠 409 - DATABASE CONFLICT
+    // 400 - BAD REQUEST (Entity-specific)
+    // ==========================================================
+    @ExceptionHandler({
+            com.User.UserBadRequestException.class,
+            com.Role.RoleBadRequestException.class,
+            com.Room.RoomBadRequestException.class,
+            com.RoomType.RoomTypeBadRequestException.class,
+            com.Booking.BookingBadRequestException.class,
+            com.Payment.PaymentBadRequestException.class
+    })
+    public ResponseEntity<ApiError> handleBadRequest(RuntimeException ex,
+                                                     HttpServletRequest request) {
+
+        return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    // ==========================================================
+    // 409 - DATABASE CONFLICT
     // ==========================================================
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDatabaseConflict(DataIntegrityViolationException ex,
@@ -79,7 +118,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟡 400 - BAD REQUEST (IllegalArgumentException)
+    // 400 - BAD REQUEST (IllegalArgumentException)
     // ==========================================================
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex,
@@ -89,7 +128,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟡 400 - VALIDATION (@Valid body)
+    // 400 - VALIDATION (@Valid body)
     // ==========================================================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationError(MethodArgumentNotValidException ex,
@@ -106,7 +145,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟡 400 - VALIDATION (Request params / path vars)
+    // 400 - VALIDATION (Request params / path vars)
     // ==========================================================
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex,
@@ -122,7 +161,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟡 400 - MALFORMED JSON
+    // 400 - MALFORMED JSON
     // ==========================================================
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleJsonError(HttpMessageNotReadableException ex,
@@ -133,7 +172,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟡 400 - PARAMETER TYPE MISMATCH
+    // 400 - PARAMETER TYPE MISMATCH
     // ==========================================================
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
@@ -144,7 +183,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🔵 401 - UNAUTHORIZED
+    // 401 - UNAUTHORIZED
     // ==========================================================
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex,
@@ -157,7 +196,18 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🟣 403 - FORBIDDEN
+    // 403 - FORBIDDEN (Refresh Token)
+    // ==========================================================
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<ApiError> handleRefreshTokenError(RefreshTokenException ex,
+                                                            HttpServletRequest request) {
+
+        log.warn("Refresh token error at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN, request);
+    }
+
+    // ==========================================================
+    // 403 - FORBIDDEN (Access Denied)
     // ==========================================================
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex,
@@ -170,7 +220,18 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // ⚫ 500 - FALLBACK
+    // 423 - LOCKED (Account Locked)
+    // ==========================================================
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiError> handleAccountLocked(LockedException ex,
+                                                        HttpServletRequest request) {
+
+        log.warn("Account locked at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(ex.getMessage(), HttpStatus.LOCKED, request);
+    }
+
+    // ==========================================================
+    // 500 - FALLBACK
     // ==========================================================
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGlobalException(Exception ex,
@@ -181,7 +242,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==========================================================
-    // 🔹 Helper method
+    // Helper method
     // ==========================================================
     private ResponseEntity<ApiError> buildResponse(String message,
                                                    HttpStatus status,
