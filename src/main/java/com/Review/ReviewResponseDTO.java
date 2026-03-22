@@ -1,18 +1,32 @@
 package com.Review;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
-@Getter
-@AllArgsConstructor
-public class ReviewResponseDTO {
+import java.util.List;
 
-    private Long id;
-    private Integer rating;
-    private String comment;
-    private LocalDateTime createdAt;
-    private Long userId;
-    private Long roomId;
-    private Long hotelId;
+/**
+ * Service interface for Review operations.
+ */
+public interface ReviewService {
+
+    ReviewResponseDTO create(ReviewRequestDTO dto, Long userId);
+
+    ReviewResponseDTO getById(Long id);
+
+    ReviewResponseDTO update(Long id, ReviewRequestDTO dto, Long userId);
+
+    void delete(Long id, Long userId);
+
+    Page<ReviewResponseDTO> getByHotel(Long hotelId, Pageable pageable);
+
+    List<ReviewResponseDTO> getByUser(Long userId);
+
+    ReviewResponseDTO approve(Long id);
+
+    ReviewResponseDTO addResponse(Long id, String response);
+
+    Page<ReviewResponseDTO> getPendingReviews(Pageable pageable);
+
+    Double getAverageRating(Long hotelId);
 }

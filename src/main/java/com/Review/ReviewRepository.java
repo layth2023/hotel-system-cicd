@@ -1,34 +1,34 @@
 package com.Review;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
+
+/**
+ * Repository for Review entity operations.
+ */
+@Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    @Query("""
-        SELECT AVG(r.rating)
-        FROM Review r
-        WHERE r.room.id = :roomId
-    """)
-    Double calculateAverageForRoom(Long roomId);
+    Page<Review> findByHotelIdAndApprovedTrue(Long hotelId, Pageable pageable);
 
-    @Query("""
-        SELECT AVG(r.rating)
-        FROM Review r
-        WHERE r.hotel.id = :hotelId
-    """)
-    Double calculateAverageForHotel(Long hotelId);
+    Page<Review> findByHotelId(Long hotelId, Pageable pageable);
 
-    List<Review> findByRoom_IdOrderByCreatedAtDesc(Long roomId);
+    List<Review> findByUserId(Long userId);
 
-    List<Review> findByHotel_IdOrderByCreatedAtDesc(Long hotelId);
+    Page<Review> findByApprovedFalse(Pageable pageable);
 
-    boolean existsByUser_IdAndRoom_Id(Long userId, Long roomId);
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.hotel.id = :hotelId AND r.approved = true")
+    Double getAverageRatingByHotelId(Long hotelId);
 
-    boolean existsByUser_IdAndHotel_Id(Long userId, Long hotelId);
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.hotel.id = :hotelId AND r.approved = true")
+    Long countApprovedReviewsByHotelId(Long hotelId);
 
-    Long countByRoom_Id(Long roomId);
+    boolean existsByUserIdAndHotelId(Long userId, Long hotelId);
 
-    Long countByHotel_Id(Long hotelId);
+    boolean existsByUserIdAndBookingId(Long userId, Long bookingId);
 }

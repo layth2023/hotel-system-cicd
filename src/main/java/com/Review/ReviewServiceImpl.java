@@ -1,143 +1,167 @@
 package com.Review;
 
+import com.Booking.Booking;
+import com.Booking.BookingNotFoundException;
 import com.Booking.BookingRepository;
-import com.Booking.BookingStatus;
-import com.Room.Room;
-import com.Room.RoomRepository;
+import com.Hotel.Hotel;
+import com.Hotel.HotelNotFoundException;
+import com.Hotel.HotelRepository;
 import com.User.User;
+import com.User.UserNotFoundException;
 import com.User.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * Service implementation for Review operations.
+ */
 @Service
 @Transactional
 public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
-    private final RoomRepository roomRepository;
+    private final HotelRepository hotelRepository;
     private final BookingRepository bookingRepository;
-    private final ReviewMapper mapper;
+    private final ReviewMapper reviewMapper;
 
     public ReviewServiceImpl(ReviewRepository reviewRepository,
                              UserRepository userRepository,
-                             RoomRepository roomRepository,
+                             HotelRepository hotelRepository,
                              BookingRepository bookingRepository,
-                             ReviewMapper mapper) {
+                             ReviewMapper reviewMapper) {
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
-        this.roomRepository = roomRepository;
+        this.hotelRepository = hotelRepository;
         this.bookingRepository = bookingRepository;
-        this.mapper = mapper;
+        this.reviewMapper = reviewMapper;
     }
 
     @Override
-    public ReviewResponseDTO create(ReviewRequestDTO dto) {
+    public ReviewResponseDTO create(ReviewRequestDTO dto, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
-        validateRating(dto.getRating());
+        Hotel hotel = hotelRepository.findById(dto.getHotelId())
+                .orElseThrow(() -> new HotelNotFoundException("Hotel not found with id: " + dto.getHotelId()));
 
-        User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        Room room = roomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-
-        validateCompletedBooking(dto.getUserId(), dto.getRoomId());
-
-        preventDuplicateReview(dto.getUserId(), dto.getRoomId());
+        // Check if user already reviewed this hotel
+        if (reviewRepository.existsByUserIdAndHotelId(userId, dto.getHotelId())) {
+            throw new ReviewAlreadyExistsException("You have already reviewed this hotel");
+        }
 
         Review review = new Review();
         review.setUser(user);
-        review.setRoom(room);
+        review.setHotel(hotel);
         review.setRating(dto.getRating());
+        review.setTitle(dto.getTitle());
         review.setComment(dto.getComment());
+        review.setCleanlinessRating(dto.getCleanlinessRating());
+        review.setServiceRating(dto.getServiceRating());
+        review.setLocationRating(dto.getLocationRating());
+        review.setValueRating(dto.getValueRating());
+
+        // If booking is provided, link it and mark as verified
+        if (dto.getBookingId() != null) {
+            Booking booking = bookingRepository.findById(dto.getBookingId())
+                    .orElseThrow(() -> new BookingNotFoundException(dto.getBookingId()));
+            review.setBooking(booking);
+            review.setVerified(true);
+        }
 
         Review saved = reviewRepository.save(review);
-
-        updateRoomStatistics(room);
-
-        return mapper.toDTO(saved);
+        return reviewMapper.toResponseDTO(saved);
     }
 
     @Override
-    public List<ReviewResponseDTO> getByRoom(Long roomId) {
+    @Transactional(readOnly = true)
+    public ReviewResponseDTO getById(Long id) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException(id));
+        return reviewMapper.toResponseDTO(review);
+    }
 
-        if (!roomRepository.existsById(roomId)) {
-            throw new IllegalArgumentException("Room not found");
+    @Override
+    public ReviewResponseDTO update(Long id, ReviewRequestDTO dto, Long userId) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException(id));
+
+        // Only the owner can update the review
+        if (!review.getUser().getId().equals(userId)) {
+            throw new SecurityException("You can only update your own reviews");
         }
 
-        return reviewRepository.findByRoom_IdOrderByCreatedAtDesc(roomId)
+        reviewMapper.updateEntity(review, dto);
+        Review updated = reviewRepository.save(review);
+        return reviewMapper.toResponseDTO(updated);
+    }
+
+    @Override
+    public void delete(Long id, Long userId) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException(id));
+
+        // Only the owner or admin can delete
+        if (!review.getUser().getId().equals(userId)) {
+            throw new SecurityException("You can only delete your own reviews");
+        }
+
+        reviewRepository.delete(review);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReviewResponseDTO> getByHotel(Long hotelId, Pageable pageable) {
+        return reviewRepository.findByHotelIdAndApprovedTrue(hotelId, pageable)
+                .map(reviewMapper::toResponseDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewResponseDTO> getByUser(Long userId) {
+        return reviewRepository.findByUserId(userId)
                 .stream()
-                .map(mapper::toDTO)
-                .toList();
+                .map(reviewMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ReviewResponseDTO> getByHotel(Long hotelId) {
-        // Optional enhancement later
-        return reviewRepository.findByHotel_IdOrderByCreatedAtDesc(hotelId)
-                .stream()
-                .map(mapper::toDTO)
-                .toList();
+    public ReviewResponseDTO approve(Long id) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException(id));
+
+        review.setApproved(true);
+        Review updated = reviewRepository.save(review);
+        return reviewMapper.toResponseDTO(updated);
     }
-
-    // ---------------- PRIVATE METHODS ----------------
-
-    private void validateRating(Integer rating) {
-        if (rating == null || rating < 1 || rating > 5) {
-            throw new IllegalArgumentException("Rating must be between 1 and 5");
-        }
-    }
-
-    private void validateCompletedBooking(Long userId, Long roomId) {
-
-        boolean hasCompletedBooking =
-                bookingRepository.existsByUser_IdAndRoom_IdAndStatusAndCheckOutDateBefore(
-                        userId,
-                        roomId,
-                        BookingStatus.CONFIRMED,
-                        LocalDate.now()
-                );
-
-        if (!hasCompletedBooking) {
-            throw new IllegalStateException(
-                    "User must complete booking before reviewing this room"
-            );
-        }
-    }
-
-    private void preventDuplicateReview(Long userId, Long roomId) {
-
-        if (reviewRepository.existsByUser_IdAndRoom_Id(userId, roomId)) {
-            throw new IllegalStateException("User already reviewed this room");
-        }
-    }
-
-    private void updateRoomStatistics(Room room) {
-
-        Double avg = reviewRepository.calculateAverageForRoom(room.getId());
-        Long count = reviewRepository.countByRoom_Id(room.getId());
-
-        room.setAverageRating(avg != null ? avg : 0.0);
-        room.setReviewCount(count == null ? 0 : count.intValue());    }
 
     @Override
-    public ReviewSummaryDTO getRoomSummary(Long roomId) {
+    public ReviewResponseDTO addResponse(Long id, String response) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new ReviewNotFoundException(id));
 
-        if (!roomRepository.existsById(roomId)) {
-            throw new IllegalArgumentException("Room not found");
-        }
+        review.setResponse(response);
+        review.setResponseDate(LocalDateTime.now());
+        Review updated = reviewRepository.save(review);
+        return reviewMapper.toResponseDTO(updated);
+    }
 
-        Double avg = reviewRepository.calculateAverageForRoom(roomId);
-        Long count = reviewRepository.countByRoom_Id(roomId);
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReviewResponseDTO> getPendingReviews(Pageable pageable) {
+        return reviewRepository.findByApprovedFalse(pageable)
+                .map(reviewMapper::toResponseDTO);
+    }
 
-        return new ReviewSummaryDTO(
-                roomId,
-                avg != null ? avg : 0.0,
-                count != null ? count : 0
-        );
+    @Override
+    @Transactional(readOnly = true)
+    public Double getAverageRating(Long hotelId) {
+        return reviewRepository.getAverageRatingByHotelId(hotelId);
     }
 }
