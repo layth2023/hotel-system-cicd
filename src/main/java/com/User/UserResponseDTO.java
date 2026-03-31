@@ -1,10 +1,7 @@
 package com.User;
 
-import lombok.Getter;
-
 import java.util.Set;
 
-@Getter
 public class UserResponseDTO {
 
     private Long id;
@@ -21,4 +18,23 @@ public class UserResponseDTO {
         this.roles = roles;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public Set<String> getRoles() {
+        return roles;
+    }
 }

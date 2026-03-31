@@ -1,48 +1,49 @@
 package com.Amenity;
+
 import org.springframework.stereotype.Component;
+
 @Component
 public class AmenityMapper {
-    /* =========================
-       CREATE
-       ========================= */
+
     public Amenity toEntity(AmenityRequestDTO dto) {
+
         Amenity amenity = new Amenity();
-        amenity.setName(safeTrim(dto.getName()));
-        amenity.setDescription(safeTrim(dto.getDescription()));
-        // Always default to true on create
-        amenity.setIsActive(true);
+
+        amenity.setName(dto.getName() == null ? null : dto.getName().trim());
+        amenity.setDescription(dto.getDescription() == null ? null : dto.getDescription().trim());
+
+        if (dto.getIsActive() == null) {
+            amenity.setActive(true);
+        } else {
+            amenity.setActive(dto.getIsActive());
+        }
+
         return amenity;
     }
-    /* =========================
-       UPDATE (Partial Update Safe)
-       ========================= */
+
     public void updateEntity(Amenity amenity, AmenityRequestDTO dto) {
+
         if (dto.getName() != null) {
-            amenity.setName(safeTrim(dto.getName()));
+            amenity.setName(dto.getName().trim());
         }
+
         if (dto.getDescription() != null) {
-            amenity.setDescription(safeTrim(dto.getDescription()));
+            amenity.setDescription(dto.getDescription().trim());
+        } else {
+            amenity.setDescription(null);
         }
-        // Only update isActive if explicitly sent
+
         if (dto.getIsActive() != null) {
-            amenity.setIsActive(dto.getIsActive());
+            amenity.setActive(dto.getIsActive());
         }
     }
-    /* =========================
-       ENTITY → RESPONSE DTO
-       ========================= */
+
     public AmenityResponseDTO toResponseDTO(Amenity amenity) {
         return new AmenityResponseDTO(
                 amenity.getId(),
                 amenity.getName(),
                 amenity.getDescription(),
-                amenity.getIsActive()
+                amenity.isActive()
         );
-    }
-    /* =========================
-       Helper
-       ========================= */
-    private String safeTrim(String value) {
-        return value == null ? null : value.trim();
     }
 }

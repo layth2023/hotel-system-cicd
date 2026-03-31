@@ -1,21 +1,16 @@
 package com.Amenity;
 
+
 import com.PagedResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.URI;
 
 @RestController
-@RequestMapping("/api/v1/amenities")
-@Tag(name = "Amenity", description = "Amenity Management APIs")
+@RequestMapping("/amenities")
 public class AmenityController {
 
     private final AmenityService amenityService;
@@ -24,122 +19,71 @@ public class AmenityController {
         this.amenityService = amenityService;
     }
 
-    /* =========================
-       CREATE (ADMIN)
-       ========================= */
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create new amenity (ADMIN)")
-    public ResponseEntity<AmenityResponseDTO> create(
-            @Valid @RequestBody AmenityRequestDTO requestDTO) {
-
-        AmenityResponseDTO created = amenityService.create(requestDTO);
-
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(created.id())
-                .toUri();
-
-        return ResponseEntity.created(location).body(created);
+    public AmenityResponseDTO create(@Valid @RequestBody AmenityRequestDTO requestDTO) {
+        return amenityService.create(requestDTO);
     }
 
-    /* =========================
-       GET BY ID
-       ========================= */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Get amenity by ID")
-    public ResponseEntity<AmenityResponseDTO> getById(@PathVariable Long id) {
-
-        return ResponseEntity.ok(
-                amenityService.getById(id)
-        );
+    public AmenityResponseDTO getById(@PathVariable Long id) {
+        return amenityService.getById(id);
     }
 
-    /* =========================
-       GET ACTIVE
-       ========================= */
+    // users/admin: active only
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Get all active amenities")
-    public ResponseEntity<PagedResponse<AmenityResponseDTO>> getAllActive(
-            Pageable pageable) {
-
-        Page<AmenityResponseDTO> page =
-                amenityService.getAllActive(pageable);
-
-        return ResponseEntity.ok(
-                PagedResponse.from(page)
-        );
+    public PagedResponse<AmenityResponseDTO> getAllActive(Pageable pageable) {
+        Page<AmenityResponseDTO> page = amenityService.getAllActive(pageable);
+        return PagedResponse.from(page);
     }
 
-    /* =========================
-       ADMIN ENDPOINTS
-       ========================= */
-
-    @GetMapping("/admin")
+    // admin: active + inactive
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all amenities (ADMIN)")
-    public ResponseEntity<PagedResponse<AmenityResponseDTO>> getAll(
-            Pageable pageable) {
-
-        return ResponseEntity.ok(
-                PagedResponse.from(
-                        amenityService.getAll(pageable)
-                )
-        );
+    public PagedResponse<AmenityResponseDTO> getAll(Pageable pageable) {
+        Page<AmenityResponseDTO> page = amenityService.getAll(pageable);
+        return PagedResponse.from(page);
     }
 
-    @GetMapping("/admin/inactive")
+    // admin: inactive only
+    @GetMapping("/inactive")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all inactive amenities (ADMIN)")
-    public ResponseEntity<PagedResponse<AmenityResponseDTO>> getAllInactive(
-            Pageable pageable) {
-
-        return ResponseEntity.ok(
-                PagedResponse.from(
-                        amenityService.getAllInactive(pageable)
-                )
-        );
+    public PagedResponse<AmenityResponseDTO> getAllInactive(Pageable pageable) {
+        Page<AmenityResponseDTO> page = amenityService.getAllInactive(pageable);
+        return PagedResponse.from(page);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update amenity (ADMIN)")
-    public ResponseEntity<AmenityResponseDTO> update(
-            @PathVariable Long id,
-            @Valid @RequestBody AmenityRequestDTO requestDTO) {
-
-        return ResponseEntity.ok(
-                amenityService.update(id, requestDTO)
-        );
+    public AmenityResponseDTO update(@PathVariable Long id,
+                                     @Valid @RequestBody AmenityRequestDTO requestDTO) {
+        return amenityService.update(id, requestDTO);
     }
 
+    // soft delete (ADMIN)
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Soft delete amenity (ADMIN)")
-    public ResponseEntity<Void> softDelete(@PathVariable Long id) {
-
+    public void softDelete(@PathVariable Long id) {
         amenityService.softDelete(id);
-        return ResponseEntity.noContent().build();
     }
 
+    // hard delete (ADMIN)
     @DeleteMapping("/{id}/hard")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Hard delete amenity permanently (ADMIN)")
-    public ResponseEntity<Void> hardDelete(@PathVariable Long id) {
-
+    public void hardDelete(@PathVariable Long id) {
         amenityService.hardDelete(id);
-        return ResponseEntity.noContent().build();
     }
 
+    // reactivate (ADMIN)
     @PatchMapping("/{id}/reactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Reactivate amenity (ADMIN)")
-    public ResponseEntity<Void> reactivate(@PathVariable Long id) {
-
+    public void reactivate(@PathVariable Long id) {
         amenityService.reactivate(id);
-        return ResponseEntity.noContent().build();
     }
 }

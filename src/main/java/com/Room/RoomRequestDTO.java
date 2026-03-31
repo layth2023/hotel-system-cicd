@@ -1,10 +1,10 @@
 package com.Room;
-import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.Setter;
 
-@Setter
-@Getter
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
+
 public class RoomRequestDTO {
     @NotBlank(message = "Room number cannot be empty")
     @Size(min = 1, max = 100, message = "Room number must be between 1 and 100")
@@ -22,7 +22,35 @@ public class RoomRequestDTO {
     @PositiveOrZero
     private Long hotelId;
 
+    public String getRoomNumber() {
+        return roomNumber;
+    }
 
+    public void setRoomNumber(String roomNumber) {
+        this.roomNumber = roomNumber;
+    }
 
+    public Integer getFloor() {
+        return floor;
+    }
 
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public Long getRoomTypeId() {
+        return roomTypeId;
+    }
+
+    public void setRoomTypeId(Long roomTypeId) {
+        this.roomTypeId = roomTypeId;
+    }
+
+    public Long getHotelId() {
+        return hotelId;
+    }
+
+    public void setHotelId(Long hotelId) {
+        this.hotelId = hotelId;
+    }
 }

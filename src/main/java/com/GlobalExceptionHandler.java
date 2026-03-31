@@ -1,5 +1,6 @@
 package com;
 
+import com.Security.PasswordResetTokenException;
 import com.Security.RefreshTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -23,7 +24,6 @@ import java.time.Instant;
  * Global Exception Handler for consistent error responses.
  * Handles all application exceptions and returns standardized API errors.
  */
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -61,7 +61,16 @@ public class GlobalExceptionHandler {
             com.Image.ImageNotFoundException.class,
 
             // REVIEW
-            com.Review.ReviewNotFoundException.class
+            com.Review.ReviewNotFoundException.class,
+
+            // ROOM AVAILABILITY
+            com.RoomAvailability.RoomAvailabilityNotFoundException.class,
+
+            // BOOKING GUEST
+            com.BookingGuest.BookingGuestNotFoundException.class,
+
+            // NOTIFICATION
+            com.Notification.NotificationNotFoundException.class
     })
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex,
                                                    HttpServletRequest request) {
@@ -81,7 +90,8 @@ public class GlobalExceptionHandler {
             com.Amenity.AmenityAlreadyExistsException.class,
             com.Booking.BookingAlreadyExistsException.class,
             com.Payment.PaymentAlreadyExistsException.class,
-            com.Review.ReviewAlreadyExistsException.class
+            com.Review.ReviewAlreadyExistsException.class,
+            com.RoomAvailability.RoomAvailabilityAlreadyExistsException.class
     })
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex,
                                                    HttpServletRequest request) {
@@ -204,6 +214,17 @@ public class GlobalExceptionHandler {
 
         log.warn("Refresh token error at {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN, request);
+    }
+
+    // ==========================================================
+    // 400 - BAD REQUEST (Password Reset Token)
+    // ==========================================================
+    @ExceptionHandler(PasswordResetTokenException.class)
+    public ResponseEntity<ApiError> handlePasswordResetTokenError(PasswordResetTokenException ex,
+                                                                  HttpServletRequest request) {
+
+        log.warn("Password reset token error at {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, request);
     }
 
     // ==========================================================

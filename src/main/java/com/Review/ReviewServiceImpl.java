@@ -6,6 +6,10 @@ import com.Booking.BookingRepository;
 import com.Hotel.Hotel;
 import com.Hotel.HotelNotFoundException;
 import com.Hotel.HotelRepository;
+import com.Notification.NotificationService;
+import com.Room.Room;
+import com.Room.RoomNotFoundException;
+import com.Room.RoomRepository;
 import com.User.User;
 import com.User.UserNotFoundException;
 import com.User.UserRepository;
@@ -28,19 +32,25 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final HotelRepository hotelRepository;
+    private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
     private final ReviewMapper reviewMapper;
+    private final NotificationService notificationService;
 
     public ReviewServiceImpl(ReviewRepository reviewRepository,
                              UserRepository userRepository,
                              HotelRepository hotelRepository,
+                             RoomRepository roomRepository,
                              BookingRepository bookingRepository,
-                             ReviewMapper reviewMapper) {
+                             ReviewMapper reviewMapper,
+                             NotificationService notificationService) {
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.hotelRepository = hotelRepository;
+        this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
         this.reviewMapper = reviewMapper;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -48,17 +58,43 @@ public class ReviewServiceImpl implements ReviewService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
-        Hotel hotel = hotelRepository.findById(dto.getHotelId())
-                .orElseThrow(() -> new HotelNotFoundException("Hotel not found with id: " + dto.getHotelId()));
-
-        // Check if user already reviewed this hotel
-        if (reviewRepository.existsByUserIdAndHotelId(userId, dto.getHotelId())) {
-            throw new ReviewAlreadyExistsException("You have already reviewed this hotel");
+        // Validate that either hotelId or roomId is provided
+        if (dto.getHotelId() == null && dto.getRoomId() == null) {
+            throw new IllegalArgumentException("Either hotelId or roomId must be provided");
         }
 
         Review review = new Review();
         review.setUser(user);
-        review.setHotel(hotel);
+
+        // Handle hotel review
+        if (dto.getHotelId() != null) {
+            Hotel hotel = hotelRepository.findById(dto.getHotelId())
+                    .orElseThrow(() -> new HotelNotFoundException("Hotel not found with id: " + dto.getHotelId()));
+
+            // Check if user already reviewed this hotel
+            if (reviewRepository.existsByUserIdAndHotelId(userId, dto.getHotelId())) {
+                throw new ReviewAlreadyExistsException("You have already reviewed this hotel");
+            }
+            review.setHotel(hotel);
+        }
+
+        // Handle room review
+        if (dto.getRoomId() != null) {
+            Room room = roomRepository.findById(dto.getRoomId())
+                    .orElseThrow(() -> new RoomNotFoundException(dto.getRoomId()));
+
+            // Check if user already reviewed this room
+            if (reviewRepository.existsByUserIdAndRoomId(userId, dto.getRoomId())) {
+                throw new ReviewAlreadyExistsException("You have already reviewed this room");
+            }
+            review.setRoom(room);
+
+            // If room is provided but hotel is not, set the hotel from the room
+            if (dto.getHotelId() == null) {
+                review.setHotel(room.getHotel());
+            }
+        }
+
         review.setRating(dto.getRating());
         review.setTitle(dto.getTitle());
         review.setComment(dto.getComment());
@@ -138,6 +174,10 @@ public class ReviewServiceImpl implements ReviewService {
 
         review.setApproved(true);
         Review updated = reviewRepository.save(review);
+
+        // Send notification
+        notificationService.notifyReviewApproved(updated);
+
         return reviewMapper.toResponseDTO(updated);
     }
 
@@ -149,6 +189,10 @@ public class ReviewServiceImpl implements ReviewService {
         review.setResponse(response);
         review.setResponseDate(LocalDateTime.now());
         Review updated = reviewRepository.save(review);
+
+        // Send notification
+        notificationService.notifyReviewResponded(updated);
+
         return reviewMapper.toResponseDTO(updated);
     }
 
@@ -163,5 +207,18 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional(readOnly = true)
     public Double getAverageRating(Long hotelId) {
         return reviewRepository.getAverageRatingByHotelId(hotelId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReviewResponseDTO> getByRoom(Long roomId, Pageable pageable) {
+        return reviewRepository.findByRoomIdAndApprovedTrue(roomId, pageable)
+                .map(reviewMapper::toResponseDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Double getAverageRatingByRoom(Long roomId) {
+        return reviewRepository.getAverageRatingByRoomId(roomId);
     }
 }

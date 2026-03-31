@@ -114,6 +114,21 @@ public class ReviewController {
         return Map.of("hotelId", hotelId, "averageRating", rating != null ? rating : 0.0);
     }
 
+    @GetMapping("/room/{roomId}")
+    @Operation(summary = "Get reviews by room", description = "Retrieve all approved reviews for a room")
+    public Page<ReviewResponseDTO> getByRoom(
+            @PathVariable Long roomId,
+            Pageable pageable) {
+        return reviewService.getByRoom(roomId, pageable);
+    }
+
+    @GetMapping("/room/{roomId}/rating")
+    @Operation(summary = "Get average room rating", description = "Get average rating for a room")
+    public Map<String, Object> getAverageRatingByRoom(@PathVariable Long roomId) {
+        Double rating = reviewService.getAverageRatingByRoom(roomId);
+        return Map.of("roomId", roomId, "averageRating", rating != null ? rating : 0.0);
+    }
+
     private Long getUserId(Authentication authentication) {
         String username = authentication.getName();
         return userRepository.findByUsername(username)

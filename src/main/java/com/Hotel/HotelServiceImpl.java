@@ -1,14 +1,20 @@
 package com.Hotel;
 
-import com.Amenity.Amenity;
-import com.Amenity.AmenityMapper;
-import com.Amenity.AmenityNotFoundException;
-import com.Amenity.AmenityRepository;
-import com.Amenity.AmenityResponseDTO;
+import com.Amenity.*;
+import com.Room.Room;
+import com.Room.RoomMapper;
+import com.Room.RoomRepository;
+import com.Room.RoomResponseDTO;
+import com.RoomType.RoomTypeMapper;
+import com.RoomType.RoomTypeResponseDTO;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -18,15 +24,18 @@ public class HotelServiceImpl implements HotelService {
     private final HotelMapper hotelMapper;
     private final AmenityRepository amenityRepository;
     private final AmenityMapper amenityMapper;
+    private final RoomRepository roomRepository;
 
     public HotelServiceImpl(HotelRepository hotelRepository,
                             HotelMapper hotelMapper,
                             AmenityRepository amenityRepository,
-                            AmenityMapper amenityMapper) {
+                            AmenityMapper amenityMapper,
+                            RoomRepository roomRepository) {
         this.hotelRepository = hotelRepository;
         this.hotelMapper = hotelMapper;
         this.amenityRepository = amenityRepository;
         this.amenityMapper = amenityMapper;
+        this.roomRepository = roomRepository;
     }
 
     @Override
@@ -118,7 +127,7 @@ public class HotelServiceImpl implements HotelService {
         ensureHotelExists(hotelId);
 
         return amenityRepository
-                .findByHotels_IdAndIsActiveTrue(hotelId, pageable)
+                .findByHotels_IdAndActiveTrue(hotelId, pageable)
                 .map(amenityMapper::toResponseDTO);
     }
 
@@ -128,7 +137,7 @@ public class HotelServiceImpl implements HotelService {
         ensureHotelExists(hotelId);
 
         return amenityRepository
-                .findByHotels_IdAndIsActiveFalse(hotelId, pageable)
+                .findByHotels_IdAndActiveFalse(hotelId, pageable)
                 .map(amenityMapper::toResponseDTO);
     }
 
@@ -153,5 +162,52 @@ public class HotelServiceImpl implements HotelService {
             throw new IllegalArgumentException("Hotel name cannot be null");
         }
         return name.trim();
+    }
+
+    @Override
+    public Page<HotelResponseDTO> searchHotels(String city, String country, Integer minStarRating, Pageable pageable) {
+        return hotelRepository.searchHotels(city, country, minStarRating, pageable)
+                .map(hotelMapper::toResponseDTO);
+    }
+
+    @Override
+    public List<RoomResponseDTO> getHotelRooms(Long hotelId) {
+        ensureHotelExists(hotelId);
+        return roomRepository.findByHotelId(hotelId)
+                .stream()
+                .map(RoomMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RoomResponseDTO> getHotelAvailableRooms(Long hotelId, LocalDate checkInDate, LocalDate checkOutDate, Integer guests) {
+        ensureHotelExists(hotelId);
+        int guestCount = guests != null ? guests : 1;
+
+        if (checkInDate == null || checkOutDate == null) {
+            // Return all available rooms if no dates specified
+            return roomRepository.findAvailableRoomsByHotel(hotelId, guestCount)
+                    .stream()
+                    .map(RoomMapper::toDto)
+                    .collect(Collectors.toList());
+        }
+
+        return roomRepository.findAvailableRoomsByHotelAndDates(hotelId, checkInDate, checkOutDate, guestCount)
+                .stream()
+                .map(RoomMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RoomTypeResponseDTO> getHotelRoomTypes(Long hotelId) {
+        ensureHotelExists(hotelId);
+
+        // Get distinct room types from rooms in this hotel
+        return roomRepository.findByHotelId(hotelId)
+                .stream()
+                .map(Room::getRoomType)
+                .distinct()
+                .map(RoomTypeMapper::toResponseDto)
+                .collect(Collectors.toList());
     }
 }

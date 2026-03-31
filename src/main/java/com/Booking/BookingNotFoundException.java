@@ -1,9 +1,19 @@
 package com.Booking;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-@ResponseStatus(HttpStatus.NOT_FOUND)
+
+/**
+ * Exception thrown when a booking is not found.
+ */
 public class BookingNotFoundException extends RuntimeException {
+
     public BookingNotFoundException(Long id) {
         super("Booking not found with id: " + id);
+    }
+
+    public BookingNotFoundException(String confirmationNumber) {
+        super("Booking not found with confirmation number: " + confirmationNumber);
+    }
+
+    public BookingNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

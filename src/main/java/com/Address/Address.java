@@ -1,4 +1,4 @@
-package com.Adress;
+package com.Address;
 
 import com.Common.BaseEntity;
 import jakarta.persistence.*;

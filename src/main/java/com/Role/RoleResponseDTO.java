@@ -1,8 +1,5 @@
 package com.Role;
 
-import lombok.Getter;
-
-@Getter
 public class RoleResponseDTO {
 
     private Long id;
@@ -23,4 +20,23 @@ public class RoleResponseDTO {
         this.usersCount = usersCount;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public long getUsersCount() {
+        return usersCount;
+    }
 }

@@ -13,8 +13,14 @@ public class ReviewMapper {
         dto.setId(review.getId());
         dto.setUserId(review.getUser().getId());
         dto.setUsername(review.getUser().getUsername());
-        dto.setHotelId(review.getHotel().getId());
-        dto.setHotelName(review.getHotel().getName());
+        if (review.getHotel() != null) {
+            dto.setHotelId(review.getHotel().getId());
+            dto.setHotelName(review.getHotel().getName());
+        }
+        if (review.getRoom() != null) {
+            dto.setRoomId(review.getRoom().getId());
+            dto.setRoomNumber(review.getRoom().getRoomNumber());
+        }
         if (review.getBooking() != null) {
             dto.setBookingId(review.getBooking().getId());
         }

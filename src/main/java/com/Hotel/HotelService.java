@@ -1,8 +1,13 @@
 package com.Hotel;
 
 import com.Amenity.AmenityResponseDTO;
+import com.Room.RoomResponseDTO;
+import com.RoomType.RoomTypeResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public interface HotelService {
 
@@ -25,4 +30,15 @@ public interface HotelService {
     void addAmenity(Long hotelId, Long amenityId);
 
     void removeAmenity(Long hotelId, Long amenityId);
+
+    // Search
+    Page<HotelResponseDTO> searchHotels(String city, String country, Integer minStarRating, Pageable pageable);
+
+    // Rooms
+    List<RoomResponseDTO> getHotelRooms(Long hotelId);
+
+    List<RoomResponseDTO> getHotelAvailableRooms(Long hotelId, LocalDate checkInDate, LocalDate checkOutDate, Integer guests);
+
+    // Room Types
+    List<RoomTypeResponseDTO> getHotelRoomTypes(Long hotelId);
 }

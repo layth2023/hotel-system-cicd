@@ -7,8 +7,9 @@ import jakarta.validation.constraints.*;
  */
 public class ReviewRequestDTO {
 
-    @NotNull(message = "Hotel ID is required")
     private Long hotelId;
+
+    private Long roomId;
 
     private Long bookingId;
 
@@ -50,6 +51,14 @@ public class ReviewRequestDTO {
 
     public void setHotelId(Long hotelId) {
         this.hotelId = hotelId;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Long roomId) {
+        this.roomId = roomId;
     }
 
     public Long getBookingId() {

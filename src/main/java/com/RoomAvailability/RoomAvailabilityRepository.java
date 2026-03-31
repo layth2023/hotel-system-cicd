@@ -1,5 +1,7 @@
 package com.RoomAvailability;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -25,4 +27,8 @@ public interface RoomAvailabilityRepository extends JpaRepository<RoomAvailabili
     long countUnavailableDates(Long roomId, LocalDate startDate, LocalDate endDate);
 
     void deleteByRoomIdAndDateBetween(Long roomId, LocalDate startDate, LocalDate endDate);
+
+    Page<RoomAvailability> findByRoomId(Long roomId, Pageable pageable);
+
+    List<RoomAvailability> findByRoomId(Long roomId);
 }

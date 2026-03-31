@@ -21,13 +21,13 @@ public class AmenityServiceImpl implements AmenityService {
     @Override
     public AmenityResponseDTO create(AmenityRequestDTO requestDTO) {
 
-        String name = normalize(requestDTO.getName());
+        String normalizedName = normalize(requestDTO.getName());
 
-        if (amenityRepository.existsByNameInsensitive(name)) {
-            throw new AmenityAlreadyExistsException(name);
+        if (amenityRepository.existsByNameInsensitive(normalizedName)) {
+            throw new AmenityAlreadyExistsException(normalizedName);
         }
 
-        requestDTO.setName(name);
+        requestDTO.setName(normalizedName);
 
         Amenity amenity = amenityMapper.toEntity(requestDTO);
         Amenity saved = amenityRepository.save(amenity);
@@ -46,7 +46,7 @@ public class AmenityServiceImpl implements AmenityService {
 
     @Override
     public Page<AmenityResponseDTO> getAllActive(Pageable pageable) {
-        return amenityRepository.findAllByIsActiveTrue(pageable)
+        return amenityRepository.findAllByActiveTrue(pageable)
                 .map(amenityMapper::toResponseDTO);
     }
 
@@ -58,7 +58,7 @@ public class AmenityServiceImpl implements AmenityService {
 
     @Override
     public Page<AmenityResponseDTO> getAllInactive(Pageable pageable) {
-        return amenityRepository.findAllByIsActiveFalse(pageable)
+        return amenityRepository.findAllByActiveFalse(pageable)
                 .map(amenityMapper::toResponseDTO);
     }
 
@@ -68,17 +68,18 @@ public class AmenityServiceImpl implements AmenityService {
         Amenity amenity = amenityRepository.findById(id)
                 .orElseThrow(() -> new AmenityNotFoundException(id));
 
-        String name = normalize(requestDTO.getName());
+        String normalizedName = normalize(requestDTO.getName());
 
-        if (amenityRepository.existsByNameInsensitiveAndIdNot(name, id)) {
-            throw new AmenityAlreadyExistsException(name);
+        if (amenityRepository.existsByNameInsensitiveAndIdNot(normalizedName, id)) {
+            throw new AmenityAlreadyExistsException(normalizedName);
         }
 
-        requestDTO.setName(name);
+        requestDTO.setName(normalizedName);
 
         amenityMapper.updateEntity(amenity, requestDTO);
+        Amenity saved = amenityRepository.save(amenity);
 
-        return amenityMapper.toResponseDTO(amenity);
+        return amenityMapper.toResponseDTO(saved);
     }
 
     @Override
@@ -86,7 +87,7 @@ public class AmenityServiceImpl implements AmenityService {
         Amenity amenity = amenityRepository.findById(id)
                 .orElseThrow(() -> new AmenityNotFoundException(id));
 
-        amenity.setIsActive(false);
+        amenity.setActive(false);
     }
 
     @Override
@@ -102,18 +103,13 @@ public class AmenityServiceImpl implements AmenityService {
         Amenity amenity = amenityRepository.findById(id)
                 .orElseThrow(() -> new AmenityNotFoundException(id));
 
-        amenity.setIsActive(true);
+        amenity.setActive(true);
     }
 
-    /* =========================
-       PRIVATE VALIDATION
-       ========================= */
     private String normalize(String name) {
-
-        if (name == null || name.isBlank()) {
-            throw new AmenityValidationException("Amenity name cannot be empty");
+        if (name == null) {
+            throw new IllegalArgumentException("Amenity name cannot be null");
         }
-
         return name.trim();
     }
 }

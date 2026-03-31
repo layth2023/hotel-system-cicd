@@ -1,8 +1,5 @@
 package com.Room;
 
-import lombok.Getter;
-
-@Getter
 public class RoomResponseDTO {
     private final Long id;
     private String roomNumber;
@@ -16,7 +13,25 @@ public class RoomResponseDTO {
         this.floor = floor;
         this.roomTypeId = roomTypeId;
         this.roomTypeName = roomTypeName;
-
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getRoomNumber() {
+        return roomNumber;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public Long getRoomTypeId() {
+        return roomTypeId;
+    }
+
+    public String getRoomTypeName() {
+        return roomTypeName;
+    }
 }

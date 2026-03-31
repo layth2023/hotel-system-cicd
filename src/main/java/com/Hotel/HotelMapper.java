@@ -17,6 +17,7 @@ public class HotelMapper {
         hotel.setCountry(dto.getCountry());
         hotel.setPhone(dto.getPhone());
         hotel.setEmail(dto.getEmail());
+        hotel.setNumberOfFloors(dto.getNumberOfFloors());
         return hotel;
     }
 
@@ -27,6 +28,7 @@ public class HotelMapper {
         hotel.setCountry(dto.getCountry());
         hotel.setPhone(dto.getPhone());
         hotel.setEmail(dto.getEmail());
+        hotel.setNumberOfFloors(dto.getNumberOfFloors());
     }
 
     public HotelResponseDTO toResponseDTO(Hotel hotel) {
@@ -38,6 +40,7 @@ public class HotelMapper {
                 hotel.getCountry(),
                 hotel.getPhone(),
                 hotel.getEmail(),
+                hotel.getNumberOfFloors(),
                 hotel.getAmenities().stream().map(Amenity::getName).collect(Collectors.toSet())
         );
     }

@@ -1,6 +1,7 @@
 package com.Payment;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 
 public class PaymentRequestDTO {

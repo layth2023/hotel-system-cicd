@@ -2,11 +2,7 @@ package com.Role;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
 
-@Setter
-@Getter
 public class RoleRequestDTO {
 
     @NotBlank(message = "Role name is required")
@@ -20,4 +16,27 @@ public class RoleRequestDTO {
 
     public RoleRequestDTO() {}
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 }

@@ -1,13 +1,32 @@
 package com.Amenity;
-import io.swagger.v3.oas.annotations.media.Schema;
-@Schema(description = "Amenity response object")
-public record AmenityResponseDTO(
-        @Schema(example = "1")
-        Long id,
-        @Schema(example = "Free WiFi")
-        String name,
-        @Schema(example = "High-speed wireless internet")
-        String description,
-        @Schema(example = "true")
-        Boolean isActive
-) {}
+
+public class AmenityResponseDTO {
+
+        private Long id;
+        private String name;
+        private String description;
+        private Boolean isActive;
+
+        public AmenityResponseDTO(Long id, String name, String description, Boolean isActive) {
+                this.id = id;
+                this.name = name;
+                this.description = description;
+                this.isActive = isActive;
+        }
+
+        public Long getId() {
+                return id;
+        }
+
+        public String getName() {
+                return name;
+        }
+
+        public String getDescription() {
+                return description;
+        }
+
+        public Boolean getIsActive() {
+                return isActive;
+        }
+}

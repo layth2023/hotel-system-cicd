@@ -3,6 +3,7 @@ package com.Review;
 import com.Booking.Booking;
 import com.Common.BaseEntity;
 import com.Hotel.Hotel;
+import com.Room.Room;
 import com.User.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -42,6 +43,11 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "booking_id")
     @JsonIgnore
     private Booking booking;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    @JsonIgnore
+    private Room room;
 
     @NotNull(message = "Rating is required")
     @Min(value = 1, message = "Rating must be at least 1")
@@ -133,6 +139,14 @@ public class Review extends BaseEntity {
 
     public void setBooking(Booking booking) {
         this.booking = booking;
+    }
+
+    public Room getRoom() {
+        return room;
+    }
+
+    public void setRoom(Room room) {
+        this.room = room;
     }
 
     public Integer getRating() {

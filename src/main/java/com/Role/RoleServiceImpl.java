@@ -3,8 +3,10 @@ package com.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
@@ -14,12 +16,14 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<RoleResponseDTO> getAll(Pageable pageable) {
         return roleRepository.findAll(pageable)
                 .map(RoleMapper::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RoleResponseDTO getById(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new RoleNotFoundException("Role not found with id: " + id));
