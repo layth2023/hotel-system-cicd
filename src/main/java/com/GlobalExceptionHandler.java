@@ -221,7 +221,7 @@ public class GlobalExceptionHandler {
     // ==========================================================
     @ExceptionHandler(PasswordResetTokenException.class)
     public ResponseEntity<ApiError> handlePasswordResetTokenError(PasswordResetTokenException ex,
-                                                                  HttpServletRequest request) {
+                                                                   HttpServletRequest request) {
 
         log.warn("Password reset token error at {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, request);

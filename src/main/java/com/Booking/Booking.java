@@ -377,6 +377,7 @@ public class Booking extends BaseEntity {
         return status == BookingStatus.PENDING || status == BookingStatus.CONFIRMED;
     }
 
+    @PrePersist
     public void generateConfirmationNumber() {
         if (confirmationNumber == null) {
             confirmationNumber = "BK" + System.currentTimeMillis();

@@ -1,9 +1,6 @@
 package com.Room;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public class RoomRequestDTO {
     @NotBlank(message = "Room number cannot be empty")

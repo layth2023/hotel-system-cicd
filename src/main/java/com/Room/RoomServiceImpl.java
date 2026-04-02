@@ -188,6 +188,15 @@ public class RoomServiceImpl implements RoomServiceInt {
                                     .contains(searchRequest.getRoomTypeName().toLowerCase())) {
                         return false;
                     }
+                    // Filter by amenity
+                    if (searchRequest.getAmenity() != null && !searchRequest.getAmenity().isBlank()) {
+                        String amenityFilter = searchRequest.getAmenity().toLowerCase();
+                        boolean hasAmenity = room.getAmenities().stream()
+                                .anyMatch(amenity -> amenity.getName().toLowerCase().contains(amenityFilter));
+                        if (!hasAmenity) {
+                            return false;
+                        }
+                    }
                     return true;
                 })
                 .map(RoomMapper::toDto)

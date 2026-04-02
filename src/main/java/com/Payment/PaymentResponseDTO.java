@@ -22,5 +22,23 @@ public class PaymentResponseDTO {
         this.bookingId = bookingId;
     }
 
-    // getters
+    public Long getId() {
+        return id;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public Long getBookingId() {
+        return bookingId;
+    }
 }

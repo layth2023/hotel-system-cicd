@@ -117,7 +117,8 @@ public class RoomController {
             @RequestParam(required = false) Integer guests,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) String roomTypeName
+            @RequestParam(required = false) String roomTypeName,
+            @RequestParam(required = false) String amenity
     ) {
         RoomSearchRequestDTO searchRequest = new RoomSearchRequestDTO();
         searchRequest.setHotelId(hotelId);
@@ -127,6 +128,7 @@ public class RoomController {
         searchRequest.setMinPrice(minPrice);
         searchRequest.setMaxPrice(maxPrice);
         searchRequest.setRoomTypeName(roomTypeName);
+        searchRequest.setAmenity(amenity);
 
         return roomService.searchRooms(searchRequest);
     }
