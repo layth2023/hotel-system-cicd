@@ -166,7 +166,7 @@ class BookingControllerTest {
             Page<BookingResponseDTO> page = new PageImpl<>(List.of(responseDTO));
             when(bookingService.getByUserId(anyLong(), any(Pageable.class))).thenReturn(page);
 
-            mockMvc.perform(get("/bookings")
+            mockMvc.perform(get("/bookings/me")
                             .with(user(userDetails)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray());

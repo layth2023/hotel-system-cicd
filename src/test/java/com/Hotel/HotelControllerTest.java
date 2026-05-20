@@ -59,7 +59,7 @@ class HotelControllerTest {
 
         responseDTO = new HotelResponseDTO(
                 1L, "Test Hotel", "123 Test Street", "Test City",
-                "Test Country", null, null, null, Set.of()
+                "Test Country", null, null, null, null, null, Set.of()
         );
     }
 

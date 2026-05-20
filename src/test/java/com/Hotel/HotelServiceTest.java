@@ -71,7 +71,7 @@ class HotelServiceTest {
 
         responseDTO = new HotelResponseDTO(
                 1L, "Test Hotel", "123 Test Street", "Test City",
-                "Test Country", null, null, null, Set.of()
+                "Test Country", null, null, null, null, null, Set.of()
         );
 
         pageable = PageRequest.of(0, 10);

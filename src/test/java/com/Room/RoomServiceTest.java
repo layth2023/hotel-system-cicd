@@ -89,7 +89,7 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should create room successfully")
         void shouldCreateRoom() {
-            when(roomRepository.existsByRoomNumber("101")).thenReturn(false);
+            when(roomRepository.existsByHotelIdAndRoomNumber(1L, "101")).thenReturn(false);
             when(roomTypeRepository.findById(1L)).thenReturn(Optional.of(roomType));
             when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
             when(roomRepository.save(any(Room.class))).thenReturn(room);
@@ -104,7 +104,7 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should throw exception when room number exists")
         void shouldThrowExceptionWhenRoomNumberExists() {
-            when(roomRepository.existsByRoomNumber("101")).thenReturn(true);
+            when(roomRepository.existsByHotelIdAndRoomNumber(1L, "101")).thenReturn(true);
 
             assertThrows(RoomAlreadyExistsException.class, () -> roomService.create(requestDTO));
         }
@@ -112,7 +112,7 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should throw exception when room type not found")
         void shouldThrowExceptionWhenRoomTypeNotFound() {
-            when(roomRepository.existsByRoomNumber("101")).thenReturn(false);
+            when(roomRepository.existsByHotelIdAndRoomNumber(1L, "101")).thenReturn(false);
             when(roomTypeRepository.findById(999L)).thenReturn(Optional.empty());
             requestDTO.setRoomTypeId(999L);
 
@@ -122,7 +122,7 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should throw exception when hotel not found")
         void shouldThrowExceptionWhenHotelNotFound() {
-            when(roomRepository.existsByRoomNumber("101")).thenReturn(false);
+            when(roomRepository.existsByHotelIdAndRoomNumber(anyLong(), eq("101"))).thenReturn(false);
             when(roomTypeRepository.findById(1L)).thenReturn(Optional.of(roomType));
             when(hotelRepository.findById(999L)).thenReturn(Optional.empty());
             requestDTO.setHotelId(999L);
@@ -201,9 +201,9 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should find room by room number")
         void shouldFindByRoomNumber() {
-            when(roomRepository.findByRoomNumber("101")).thenReturn(Optional.of(room));
+            when(roomRepository.findByHotelIdAndRoomNumber(1L, "101")).thenReturn(Optional.of(room));
 
-            RoomResponseDTO result = roomService.findByRoomNumber("101");
+            RoomResponseDTO result = roomService.findByHotelAndRoomNumber(1L, "101");
 
             assertNotNull(result);
             assertEquals("101", result.getRoomNumber());
@@ -212,9 +212,9 @@ class RoomServiceTest {
         @Test
         @DisplayName("Should throw exception when room number not found")
         void shouldThrowExceptionWhenRoomNumberNotFound() {
-            when(roomRepository.findByRoomNumber("999")).thenReturn(Optional.empty());
+            when(roomRepository.findByHotelIdAndRoomNumber(1L, "999")).thenReturn(Optional.empty());
 
-            assertThrows(RoomNotFoundException.class, () -> roomService.findByRoomNumber("999"));
+            assertThrows(RoomNotFoundException.class, () -> roomService.findByHotelAndRoomNumber(1L, "999"));
         }
 
         @Test
